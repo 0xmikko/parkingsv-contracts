@@ -5,7 +5,42 @@ import "util.scrypt";
 */
 contract Token {
 
+    static int OP_PUSHDATA1 = 76;
+    static int OP_PUSHDATA2 = 77;
+    static int OP_PUSHDATA4 = 78;
 
+
+    function convertLen(int num) returns(bytes) {
+
+        bytes result = b'';
+        if (num < 76) {
+            result = Util.toLEUnsigned(num, 1);
+        } else if (num < 256) {
+            result = Util.toLEUnsigned(Token.OP_PUSHDATA1, 1) + Util.toLEUnsigned(num, 1);
+        } else if (num < 0x10000000) {
+            result = Util.toLEUnsigned(Token.OP_PUSHDATA2, 1) + Util.toLEUnsigned(num, 2); 
+        } else {
+            result = Util.toLEUnsigned(Token.OP_PUSHDATA4, 1) + Util.toLEUnsigned(num, 4); //bw.writeUInt32LE(chunk.len)
+        }
+
+        return result;
+    }
+
+    function getShift(int len) returns(int) {
+
+        int shift = 0;
+        if (len< 0x100000000) {
+            shift = 1;
+        }
+        else if (len < 0x10000000000000000) {
+            shift = 2;
+        } else {
+            shift = 4;
+        }
+
+        return shift;
+
+    }
 
     public function addNewMember(
         PubKey sender,
@@ -14,15 +49,36 @@ contract Token {
         PubKey newUserPk,
         int amount) {
 
-        bytes lockingScript = Util.scriptCode(txPreimage);
-        bytes updatedLockingScript = lockingScript + newUserPk + num2bin(0, Util.DataLen);
 
-        // Sha256 hashOutputs = hash256(num2bin(amount,
-        //         Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
+        // this ensures the preimage is for the current tx
+        require(Tx.checkPreimage(txPreimage));
+
+
+        bytes lockingScript = Util.scriptCode(txPreimage);
+
+        int scriptLen = length(lockingScript);
+        int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
+
+        int dataBlockLen =  Util.DataLen + qty * (Util.PubKeyLen + Util.DataLen);
+        int updatedDataLen = Util.DataLen + (qty+1) * (Util.PubKeyLen + Util.DataLen);
+
+        int codeEnd = scriptLen - dataBlockLen - this.getShift(dataBlockLen);
+
+        
+        bytes opCode = this.convertLen(updatedDataLen);
+        bytes preUpdatedScript = lockingScript[:codeEnd] + opCode;
+
+        require(opCode == b'4c67');
+
+        bytes updatedLockingScript =  preUpdatedScript + lockingScript[scriptLen - dataBlockLen: scriptLen - Util.DataLen]
+                                 + newUserPk + num2bin(0, Util.DataLen) 
+                                 + num2bin(qty+1, Util.DataLen);
+
+        Sha256 hashOutputs = hash256(num2bin(amount,
+                Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
 
         // require(hashOutputs == Util.hashOutputs(txPreimage));
     }
-
 
     function getPubKeyByIndex(int pkStart, bytes lockingScript, int index) returns(PubKey) {
 
@@ -39,7 +95,10 @@ contract Token {
         return balance;
     }
 
-    function updateState(int pkStart, bytes lockingScript, int index, int newBalance) returns(bytes) {
+    function updateState(int pkStart,
+        bytes lockingScript,
+        int index,
+        int newBalance) returns(bytes) {
         int offset = pkStart + index *(Util.PubKeyLen + Util.DataLen) + Util.PubKeyLen;
         bytes updatedState = lockingScript[ : offset] + num2bin(newBalance,
             Util.DataLen) + lockingScript[offset + Util.DataLen : ];
@@ -68,8 +127,8 @@ contract Token {
         int scriptLen = length(lockingScript);
 
 
-        int qty = unpack(lockingScript[scriptLen - Util.DataLen:]);
-        int pkStart = scriptLen - qty * (Util.PubKeyLen + Util.DataLen) - Util.DataLen;
+        int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
+        int pkStart = scriptLen - qty *(Util.PubKeyLen + Util.DataLen) - Util.DataLen;
 
         // check that index < accoutns qty
         require(senderId < qty);
@@ -90,8 +149,15 @@ contract Token {
         balanceReceiver = balanceReceiver + value;
 
         // write new locking script
-        bytes updatedLockingScript = this.updateState(pkStart, lockingScript, senderId, balanceSender);
-        updatedLockingScript = this.updateState(pkStart, updatedLockingScript, receiverId, balanceReceiver);
+        bytes updatedLockingScript = this.updateState(pkStart,
+            lockingScript,
+            senderId,
+            balanceSender);
+
+        updatedLockingScript = this.updateState(pkStart,
+            updatedLockingScript,
+            receiverId,
+            balanceReceiver);
 
         Sha256 hashOutputs = hash256(num2bin(amount,
                 Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
@@ -101,3 +167,18 @@ contract Token {
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

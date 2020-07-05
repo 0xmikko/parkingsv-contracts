@@ -105,6 +105,9 @@ compileContract("token.scrypt");
         num2bin(40, DataLen) +
         num2bin(2, DataLen);
 
+      // console.log(token.lockingScript.toHex())
+      // console.log(bsv.Script.fromASM(token.dataLoad))
+
       const newLockingScriptASM = token.lockingScript.toASM();
       const newAmount = amount - FEE;
 
@@ -166,38 +169,52 @@ compileContract("token.scrypt");
         num2bin(0, DataLen) +
         num2bin(3, DataLen);
 
-      const newLockingScriptASM = token.lockingScript.toASM();
-      const newAmount = amount - FEE;
+        // console.log(token.lockingScript.toHex())
+        console.log(toHex(publicKey1));
+        console.log(bsv.Script.fromASM(token.dataLoad));
+        const s1 = token.lockingScript.toHex();
+        const s2 = bsv.Script.fromASM(token.dataLoad).toHex();
+        console.log(s1);
+        console.log(s2);
+        const dataEnd = s1.indexOf(s2)/2;
+        console.log(dataEnd);
+        console.log(s1.substr(dataEnd*2));
 
-      const unlockScriptTx = await createUnlockingTx(
-        lockingTxid,
-        amount,
-        prevLockingScript.toASM(),
-        newAmount,
-        newLockingScriptASM
-      );
+      
+        console.log(s2.length);
 
-      // call contract method to get unlocking script
-      const preimage = getPreimage(
-        unlockScriptTx,
-        prevLockingScript.toASM(),
-        amount
-      );
+        const newLockingScriptASM = token.lockingScript.toASM();
+        const newAmount = amount - FEE;
+  
+        const unlockScriptTx = await createUnlockingTx(
+          lockingTxid,
+          amount,
+          prevLockingScript.toASM(),
+          newAmount,
+          newLockingScriptASM
+        );
+  
+        // call contract method to get unlocking script
+        const preimage = getPreimage(
+          unlockScriptTx,
+          prevLockingScript.toASM(),
+          amount
+        );
+  
+        const sig1 = signTx(
+          unlockScriptTx,
+          privateKey1,
+          prevLockingScript.toASM(),
+          amount
+        );
 
-      // SIGN CONTRACT
-      const sig1 = signTx(
-        unlockScriptTx,
-        privateKey1,
-        prevLockingScript.toASM(),
-        amount
-      );
       const unlockingScript = token
         .addNewMember(
           new PubKey(toHex(publicKey1)),
           new Sig(toHex(sig1)),
           new Bytes(toHex(preimage)),
           new PubKey(toHex(publicKey3)),
-          amount
+          newAmount
         )
         .toScript();
 
@@ -205,7 +222,7 @@ compileContract("token.scrypt");
       unlockScriptTx.inputs[0].setScript(unlockingScript);
 
       lockingTxid = await sendTx(unlockScriptTx);
-      console.log("transfer txid2:    ", lockingTxid);
+      console.log("transfer txid2[NEW CELL]:    ", lockingTxid);
 
       amount = newAmount;
     }
