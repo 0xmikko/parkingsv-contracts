@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import { buildContractClass, signTx, toHex, bsv, Ripemd160, PubKey, Sig } from 'scryptlib';
-import { loadDesc } from "../../helper";
+import { loadDesc } from "../../src/helper";
 
 /**
  * an example test for contract containing signature verification
  */
-import { inputIndex, inputSatoshis, tx } from '../../helper';
+import { inputIndex, inputSatoshis, tx } from '../../src/helper';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey

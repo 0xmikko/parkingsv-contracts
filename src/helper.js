@@ -107,12 +107,12 @@ async function sendTx(tx) {
 }
 
 function compileContract(fileName) {
-  const filePath = path.join(__dirname, 'contracts', fileName);
+  const filePath = path.join(__dirname, '../contracts', fileName);
   console.log(`Compiling contract ${filePath} ...`);
 
   const result = compile(
     { path: filePath },
-    { desc: true, outputDir: path.join(__dirname, 'tests/fixture/autoGen') }
+    { desc: true, outputDir: path.join(__dirname, '../build') }
   );
 
   if (result.errors.length > 0) {
@@ -125,7 +125,7 @@ function compileContract(fileName) {
 }
 
 function loadDesc(fileName) {
-  const filePath = path.join(__dirname, `tests/fixture/autoGen/${fileName}`);
+  const filePath = path.join(__dirname, `../build/${fileName}`);
   if (!existsSync(filePath)) {
     throw new Error(`Description file ${filePath} not exist!\nIf You already run 'npm run watch', maybe fix the compile error first!`)
   }

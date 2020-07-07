@@ -3,7 +3,7 @@
  **/
 import { expect } from 'chai';
 import { buildContractClass, signTx, toHex, bsv, PubKey, Sig, Bytes, Sha256, Ripemd160 } from 'scryptlib';
-import { inputIndex, inputSatoshis, tx, loadDesc } from '../../helper';
+import { inputIndex, inputSatoshis, tx, loadDesc } from '../../src/helper';
 
 // Test keys
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
