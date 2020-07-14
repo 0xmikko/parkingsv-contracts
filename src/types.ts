@@ -10,6 +10,12 @@
 /// <reference types="node" />
 
 declare module 'bsv' {
+    export class Signature {
+        static fromDER(sig: Buffer): Signature;
+        static fromString(data: string): Signature;
+        SIGHASH_ALL?: number;
+        toString(): string;
+    }
 
     export namespace crypto {
         class BN { }
@@ -37,10 +43,10 @@ declare module 'bsv' {
 
         namespace Point { }
 
-        class Signature {
+        export class Signature {
             static fromDER(sig: Buffer): Signature;
             static fromString(data: string): Signature;
-            SIGHASH_ALL: number;
+            SIGHASH_ALL?: number;
             toString(): string;
         }
     }
@@ -73,6 +79,7 @@ declare module 'bsv' {
             setScript(script: Script | string | Buffer): this;
             inspect(): string;
             toObject(): object;
+           
         }
 
         class Input {
@@ -82,6 +89,7 @@ declare module 'bsv' {
             readonly script: Script;
             output?: Output;
             isValidSignature(tx: Transaction, sig: any): boolean;
+            setScript(script: Script) : void;
         }
     }
 

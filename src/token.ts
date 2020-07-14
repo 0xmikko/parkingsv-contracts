@@ -8,6 +8,7 @@ import {
   signTx,
   PubKey,
   PrivKey,
+  Sig,
 } from "scryptlib";
 import {
   DataLen,
@@ -20,34 +21,25 @@ import {
 } from "./helper";
 
 import axios from "axios";
-import { Script, Transaction, PrivateKey, PublicKey, Sig } from "bsv";
+import { Script, Transaction, PrivateKey, PublicKey, Signature } from "bsv";
 import { privateKey } from "./privateKey";
-import { AbstractContract } from "scryptlib/dist/contract";
-// import { PrivateKey, PublicKey } from "./types";
 
-// const script = bsv.Address.fromPublicKey(privateKey.toAddress().lockingScript);
-// console.log(privateKey.toAddress().Transaction)
+import { ContractCallHelper } from "./contractHelper";
+import { TokenContract } from "./tokenContract";
 
-export interface TokenContract extends AbstractContract {
 
-  addNewMember(sender: PubKey,
-  sig:Sig,
-  preimage: Bytes,
-  newUserPubKey: PubKey,
-  newAmount: number) : 
-}
 
-class ParkingToken {
+export class ParkingToken {
   tokenContract: TokenContract;
   balances: Map<string, number>;
 
   ownerPrivateKey: PrivateKey;
   ownerPublicKey: PublicKey;
 
-  amount: number = 10000;
+  amount: number = 2500;
   fee: number = 2000;
-  lockingTx : Transaction;
-  lockingTxid : string;
+  lockingTx: Transaction;
+  lockingTxid: string;
 
   private constructor() {
     const Token = buildContractClass(loadDesc("token_desc.json"));
@@ -74,7 +66,7 @@ class ParkingToken {
         this.tokenContract.lockingScript.toHex().length / 2 -
         this.tokenContract.dataLoad.length / 2;
 
-      console.log("SCRIPTLENT:", scriptLengthF);
+      console.log(`Script length: ${scriptLengthF} bytes`);
 
       this.lockingTx = await createLockingTx(
         this.ownerPrivateKey.toAddress(),
@@ -96,56 +88,27 @@ class ParkingToken {
   }
 
   async addNewUser(publicKey: string) {
-     // Getting last contract instance
-     const prevLockingScript = this.tokenContract.lockingScript;
-     if (this.balances.has(publicKey)) throw new Error("User already exists");
+    // Getting last contract instance
+    console.log(`[TOKEN CONTRACT]: Adding ${publicKey}`);
 
-     this.balances.set(publicKey, 100);
-     // update data state [!]
-     this.tokenContract.dataLoad = this.getDataLoad();
+    if (this.balances.has(publicKey)) throw new Error("User already exists");
 
-     const newLockingScriptASM = this.tokenContract.lockingScript.toASM();
-     const newAmount = this.amount - this.fee
+    this.balances.set(publicKey, 0);
+    // update data state [!]
 
-     const unlockScriptTx = await createUnlockingTx(
-       this.lockingTxid,
-       this.amount,
-       prevLockingScript.toASM(),
-       newAmount,
-       newLockingScriptASM
-     );
+    const cch = await this.prepareCall();
+    cch.unlockingScript = this.tokenContract
+      .addNewMember(
+        cch.sender,
+        cch.signature,
+        cch.preimage,
+        new PubKey(publicKey),
+        cch.newAmount
+      )
+      .toScript() as Script;
 
-     // call contract method to get unlocking script
-     const preimage = getPreimage(
-       unlockScriptTx,
-       prevLockingScript.toASM(),
-       this.amount
-     );
-
-     const sig1 = signTx(
-       unlockScriptTx,
-       this.ownerPrivateKey,
-       prevLockingScript.toASM(),
-       this.amount
-     );
-
-     const unlockingScript = this.tokenContract
-       .addNewMember(
-         new PubKey(toHex(this.ownerPublicKey.toAddress())),
-         new Sig(toHex(sig1)),
-         new Bytes(toHex(preimage)),
-         new PubKey(publicKey),
-         newAmount
-       )
-       .toScript();
-
-     // set unlocking script
-     unlockScriptTx.inputs[0].setScript(unlockingScript);
-
-     this.lockingTxid = await sendTx(unlockScriptTx);
-     console.log("transfer txid2[NEW CELL]:    ", this.lockingTxid);
-
-     this.amount = newAmount;
+    this.lockingTxid = await cch.sendTX();
+    this.amount = cch.newAmount;
   }
 
   static fromAddress(): ParkingToken {
@@ -161,14 +124,54 @@ class ParkingToken {
       .join("");
     return balances + num2bin(this.balances.size, DataLen);
   }
+
+  private async prepareCall(): Promise<ContractCallHelper> {
+    const prevLockingScript = this.tokenContract.lockingScript;
+    this.tokenContract.dataLoad = this.getDataLoad();
+
+    const newLockingScriptASM = this.tokenContract.lockingScript.toASM();
+    const newAmount = this.amount - this.fee;
+
+    const unlockScriptTx = createUnlockingTx(
+      this.lockingTxid,
+      this.amount,
+      prevLockingScript.toASM(),
+      newAmount,
+      newLockingScriptASM
+    ) as Transaction; // here was AWAIT(!)
+
+    // call contract method to get unlocking script
+    const preimage = getPreimage(
+      unlockScriptTx,
+      prevLockingScript.toASM(),
+      this.amount
+    );
+
+    const sig1 = signTx(
+      unlockScriptTx,
+      this.ownerPrivateKey,
+      prevLockingScript.toASM(),
+      this.amount
+    );
+
+    // Generating Contract Call Helper structure
+    return new ContractCallHelper({
+      sender: new PubKey(toHex(this.ownerPublicKey)),
+      signature: new Sig(toHex(sig1)) as Signature,
+      preimage: new Bytes(toHex(preimage)),
+      newAmount,
+      unlockScriptTx,
+    });
+  }
 }
 
 (async () => {
-  const pt = await ParkingToken.deployContract();
-  process.exit(1);
-
   const privateKey1 = bsv.PrivateKey.fromRandom("testnet");
   const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1);
+
+  const pt = await ParkingToken.deployContract();
+  await pt.addNewUser(toHex(publicKey1));
+  process.exit(1);
 
   const privateKey2 = bsv.PrivateKey.fromRandom("testnet");
   const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2);
