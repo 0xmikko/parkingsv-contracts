@@ -68,8 +68,6 @@ contract Token {
         bytes opCode = this.convertLen(updatedDataLen);
         bytes preUpdatedScript = lockingScript[:codeEnd] + opCode;
 
-        require(opCode == b'4c67');
-
         bytes updatedLockingScript =  preUpdatedScript + lockingScript[scriptLen - dataBlockLen: scriptLen - Util.DataLen]
                                  + newUserPk + num2bin(0, Util.DataLen) 
                                  + num2bin(qty+1, Util.DataLen);
@@ -77,7 +75,7 @@ contract Token {
         Sha256 hashOutputs = hash256(num2bin(amount,
                 Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
 
-        // require(hashOutputs == Util.hashOutputs(txPreimage));
+        require(hashOutputs == Util.hashOutputs(txPreimage));
     }
 
     function getPubKeyByIndex(int pkStart, bytes lockingScript, int index) returns(PubKey) {
