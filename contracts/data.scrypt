@@ -1,0 +1,42 @@
+import "util.scrypt";
+
+contract Data {
+    static int OP_PUSHDATA1 = 76;
+    static int OP_PUSHDATA2 = 77;
+    static int OP_PUSHDATA4 = 78;
+
+
+    static function convertLen(int num) returns(bytes) {
+
+        bytes result = b'';
+        if (num < 76) {
+            result = Util.toLEUnsigned(num, 1);
+        }
+        else if (num < 256) {
+            result = Util.toLEUnsigned(Data.OP_PUSHDATA1, 1) + Util.toLEUnsigned(num, 1);
+        }
+        else if (num < 0x10000000) {
+            result = Util.toLEUnsigned(Data.OP_PUSHDATA2, 1) + Util.toLEUnsigned(num, 2);
+        } else {
+            result = Util.toLEUnsigned(Data.OP_PUSHDATA4, 1) + Util.toLEUnsigned(num, 4); //bw.writeUInt32LE(chunk.len)
+        }
+
+        return result;
+    }
+
+    static function getShift(int len) returns(int) {
+
+        int shift = 0;
+        if (len < 0x100000000) {
+            shift = 1;
+        }
+        else if (len < 0x10000000000000000) {
+            shift = 2;
+        } else {
+            shift = 4;
+        }
+
+        return shift;
+
+    }
+}
