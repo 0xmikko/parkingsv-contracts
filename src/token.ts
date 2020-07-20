@@ -26,12 +26,11 @@ import { privateKey } from "./privateKey";
 
 import { ContractCallHelper } from "./contractHelper";
 import { TokenContract } from "./tokenContract";
-
-
+import { Ledger } from "./balances";
 
 export class ParkingToken {
   tokenContract: TokenContract;
-  balances: Map<string, number>;
+  ledger: Ledger;
 
   ownerPrivateKey: PrivateKey;
   ownerPublicKey: PublicKey;
@@ -44,7 +43,7 @@ export class ParkingToken {
   private constructor() {
     const Token = buildContractClass(loadDesc("token_desc.json"));
     this.tokenContract = new Token();
-    this.balances = new Map<string, number>();
+    this.ledger = new Ledger();
     this.ownerPrivateKey = privateKey;
     this.ownerPublicKey = bsv.PublicKey.fromPrivateKey(this.ownerPrivateKey);
   }
@@ -58,9 +57,10 @@ export class ParkingToken {
 
   async initContract(): Promise<void> {
     try {
-      this.balances.set(toHex(this.ownerPublicKey), 100);
+      this.ledger.addHolder(toHex(this.ownerPublicKey));
+      this.ledger.setBalance(toHex(this.ownerPublicKey), 100);
 
-      this.tokenContract.dataLoad = this.getDataLoad();
+      this.tokenContract.dataLoad = this.ledger.getDataLoad();
 
       const scriptLengthF =
         this.tokenContract.lockingScript.toHex().length / 2 -
@@ -91,9 +91,8 @@ export class ParkingToken {
     // Getting last contract instance
     console.log(`[TOKEN CONTRACT]: Adding ${publicKey}`);
 
-    if (this.balances.has(publicKey)) throw new Error("User already exists");
+    this.ledger.addHolder(publicKey);
 
-    this.balances.set(publicKey, 0);
     // update data state [!]
 
     const cch = await this.prepareCall();
@@ -102,8 +101,8 @@ export class ParkingToken {
         cch.sender,
         cch.signature,
         cch.preimage,
-        new PubKey(publicKey),
-        cch.newAmount
+        cch.newAmount,
+        new PubKey(publicKey)
       )
       .toScript() as Script;
 
@@ -111,6 +110,7 @@ export class ParkingToken {
     this.amount = cch.newAmount;
   }
 
+  // Restore contract from address
   static fromAddress(): ParkingToken {
     compileContract("token.scrypt");
     const instance = new ParkingToken();
@@ -118,16 +118,29 @@ export class ParkingToken {
     return instance;
   }
 
-  private getDataLoad(): string {
-    const balances = Array.from(this.balances)
-      .map((balance) => balance[0] + num2bin(balance[1], DataLen))
-      .join("");
-    return balances + num2bin(this.balances.size, DataLen);
+  async transferTokens(toAddress: string, amount: number): Promise<void> {
+
+    const transferData = this.ledger.transfer(toHex(this.ownerPublicKey), toAddress, 40);
+
+    const cch = await this.prepareCall();
+    cch.unlockingScript = this.tokenContract
+      .transfer(
+        cch.sender,
+        cch.signature,
+        cch.preimage,
+        cch.newAmount,
+        transferData.fromIndex,
+        transferData.toIndex,
+        transferData.amount,
+      )
+      .toScript() as Script;
   }
+
+ 
 
   private async prepareCall(): Promise<ContractCallHelper> {
     const prevLockingScript = this.tokenContract.lockingScript;
-    this.tokenContract.dataLoad = this.getDataLoad();
+    this.tokenContract.dataLoad = this.ledger.getDataLoad();
 
     const newLockingScriptASM = this.tokenContract.lockingScript.toASM();
     const newAmount = this.amount - this.fee;

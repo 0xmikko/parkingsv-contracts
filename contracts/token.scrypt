@@ -10,8 +10,8 @@ contract Token {
         PubKey sender,
         Sig senderSig,
         bytes txPreimage,
-        PubKey newUserPk,
-        int amount) {
+        int amount,
+        PubKey newUserPk) {
 
         // this ensures the preimage is for the current tx
         require(Tx.checkPreimage(txPreimage));
@@ -22,8 +22,8 @@ contract Token {
         int scriptLen = length(lockingScript);
         int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
 
-        int dataBlockLen = Util.DataLen + qty * (Util.PubKeyLen + Util.DataLen);
-        int updatedDataLen = Util.DataLen + (qty + 1) * (Util.PubKeyLen + Util.DataLen);
+        int dataBlockLen = Util.DataLen + qty *(Util.PubKeyLen + Util.DataLen);
+        int updatedDataLen = Util.DataLen + (qty + 1) *(Util.PubKeyLen + Util.DataLen);
 
         int codeEnd = scriptLen - dataBlockLen - Data.getShift(dataBlockLen);
 
@@ -34,6 +34,66 @@ contract Token {
         bytes updatedLockingScript = preUpdatedScript + lockingScript[scriptLen - dataBlockLen : scriptLen - Util.DataLen]
         + newUserPk + num2bin(0, Util.DataLen)
         + num2bin(qty + 1, Util.DataLen);
+
+        Sha256 hashOutputs = hash256(num2bin(amount,
+                Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
+
+        require(hashOutputs == Util.hashOutputs(txPreimage));
+    }
+
+    public function transfer(
+        PubKey sender,
+        Sig senderSig,
+        int amount,
+        bytes txPreimage,
+
+        int senderIndex,
+        int receiverIndex,
+        int value /* amount to be transferred */
+        ) {
+
+        // this ensures the preimage is for the current tx
+        require(Tx.checkPreimage(txPreimage));
+
+        // authorize
+        require(checkSig(senderSig, sender));
+
+        // read previous locking script
+        bytes lockingScript = Util.scriptCode(txPreimage);
+        int scriptLen = length(lockingScript);
+
+
+        int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
+        int pkStart = scriptLen - qty *(Util.PubKeyLen + Util.DataLen) - Util.DataLen;
+
+        // check that index < accoutns qty
+        require(senderIndex < qty);
+        require(receiverIndex < qty);
+
+        PubKey pkSender = this.getPubKeyByIndex(pkStart, lockingScript, senderIndex);
+        int balanceSender = this.getBalanceByIndex(pkStart, lockingScript, senderIndex);
+
+        PubKey pkReceiver = this.getPubKeyByIndex(pkStart, lockingScript, receiverIndex);
+        int balanceReceiver = this.getBalanceByIndex(pkStart, lockingScript, receiverIndex);
+
+        // only between two holders
+        require(sender == pkSender);
+
+        // transfer
+        require(balanceSender >= value);
+        balanceSender = balanceSender - value;
+        balanceReceiver = balanceReceiver + value;
+
+        // write new locking script
+        bytes updatedLockingScript = this.updateState(pkStart,
+            lockingScript,
+            senderIndex,
+            balanceSender);
+
+        updatedLockingScript = this.updateState(pkStart,
+            updatedLockingScript,
+            receiverIndex,
+            balanceReceiver);
 
         Sha256 hashOutputs = hash256(num2bin(amount,
                 Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
@@ -67,64 +127,7 @@ contract Token {
         return updatedState;
     }
 
-    public function transfer(
-        PubKey sender,
-        Sig senderSig,
-        int value /* amount to be transferred */
-        ,
-        bytes txPreimage,
-        int amount,
-        int senderId,
-        int receiverId) {
 
-        // this ensures the preimage is for the current tx
-        require(Tx.checkPreimage(txPreimage));
-
-        // authorize
-        require(checkSig(senderSig, sender));
-
-        // read previous locking script
-        bytes lockingScript = Util.scriptCode(txPreimage);
-        int scriptLen = length(lockingScript);
-
-
-        int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
-        int pkStart = scriptLen - qty *(Util.PubKeyLen + Util.DataLen) - Util.DataLen;
-
-        // check that index < accoutns qty
-        require(senderId < qty);
-        require(receiverId < qty);
-
-        PubKey pkSender = this.getPubKeyByIndex(pkStart, lockingScript, senderId);
-        int balanceSender = this.getBalanceByIndex(pkStart, lockingScript, senderId);
-
-        PubKey pkReceiver = this.getPubKeyByIndex(pkStart, lockingScript, receiverId);
-        int balanceReceiver = this.getBalanceByIndex(pkStart, lockingScript, receiverId);
-
-        // only between two holders
-        require(sender == pkSender);
-
-        // transfer
-        require(balanceSender >= value);
-        balanceSender = balanceSender - value;
-        balanceReceiver = balanceReceiver + value;
-
-        // write new locking script
-        bytes updatedLockingScript = this.updateState(pkStart,
-            lockingScript,
-            senderId,
-            balanceSender);
-
-        updatedLockingScript = this.updateState(pkStart,
-            updatedLockingScript,
-            receiverId,
-            balanceReceiver);
-
-        Sha256 hashOutputs = hash256(num2bin(amount,
-                Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
-
-        require(hashOutputs == Util.hashOutputs(txPreimage));
-    }
 
 
 }
