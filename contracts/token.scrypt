@@ -42,11 +42,13 @@ contract Token {
     }
 
     public function transfer(
+        // Transaction parameters
         PubKey sender,
         Sig senderSig,
-        int amount,
         bytes txPreimage,
-
+        int amount,
+        
+        // Function parameters
         int senderIndex,
         int receiverIndex,
         int value /* amount to be transferred */

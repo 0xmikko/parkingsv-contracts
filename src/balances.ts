@@ -67,6 +67,10 @@ export class Ledger {
     return balancesToString + num2bin(this.balances.size, DataLen);
   }
 
+  public toString(): string {
+    return this.balancesArray.map((balance, index) => `${index} : ${balance.pubkey} => ${balance.value}`).join("\n")
+  }
+
   private getIndex(pubkey: string): number {
     const index = this.balances.get(pubkey);
     if (index === undefined) {

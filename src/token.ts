@@ -35,7 +35,7 @@ export class ParkingToken {
   ownerPrivateKey: PrivateKey;
   ownerPublicKey: PublicKey;
 
-  amount: number = 2500;
+  amount: number = 8500;
   fee: number = 2000;
   lockingTx: Transaction;
   lockingTxid: string;
@@ -119,8 +119,13 @@ export class ParkingToken {
   }
 
   async transferTokens(toAddress: string, amount: number): Promise<void> {
-
-    const transferData = this.ledger.transfer(toHex(this.ownerPublicKey), toAddress, 40);
+    const transferData = this.ledger.transfer(
+      toHex(this.ownerPublicKey),
+      toAddress,
+      amount
+    );
+    console.log(this.ledger.toString());
+    console.log(transferData);
 
     const cch = await this.prepareCall();
     cch.unlockingScript = this.tokenContract
@@ -131,12 +136,13 @@ export class ParkingToken {
         cch.newAmount,
         transferData.fromIndex,
         transferData.toIndex,
-        transferData.amount,
+        transferData.amount
       )
       .toScript() as Script;
-  }
 
- 
+    this.lockingTxid = await cch.sendTX();
+    this.amount = cch.newAmount;
+  }
 
   private async prepareCall(): Promise<ContractCallHelper> {
     const prevLockingScript = this.tokenContract.lockingScript;
@@ -144,6 +150,8 @@ export class ParkingToken {
 
     const newLockingScriptASM = this.tokenContract.lockingScript.toASM();
     const newAmount = this.amount - this.fee;
+
+    if (newAmount < 0) throw new Error("Not enough money on contract!");
 
     const unlockScriptTx = createUnlockingTx(
       this.lockingTxid,
@@ -182,12 +190,17 @@ export class ParkingToken {
   const privateKey1 = bsv.PrivateKey.fromRandom("testnet");
   const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1);
 
-  const pt = await ParkingToken.deployContract();
-  await pt.addNewUser(toHex(publicKey1));
-  process.exit(1);
-
   const privateKey2 = bsv.PrivateKey.fromRandom("testnet");
   const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2);
+
+  const pt = await ParkingToken.deployContract();
+  await pt.addNewUser(toHex(publicKey1));
+  await pt.transferTokens(toHex(publicKey1), 20);
+
+  await pt.addNewUser(toHex(publicKey2));
+  await pt.transferTokens(toHex(publicKey2), 20);
+
+  process.exit(1);
 
   const privateKey3 = bsv.PrivateKey.fromRandom("testnet");
   const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3);

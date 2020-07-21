@@ -24,11 +24,9 @@ export class ContractCallHelper {
     this.unlockScriptTx = data.unlockScriptTx;
   }
 
-  private _unlockingScript: Script;
 
   set unlockingScript(script: Script) {
-    this._unlockingScript = script;
-    this.unlockScriptTx.inputs[0].setScript(this._unlockingScript);
+    this.unlockScriptTx.inputs[0].setScript(script);
   }
 
   async sendTX(): Promise<string> {
@@ -40,5 +38,9 @@ export class ContractCallHelper {
       showError(err);
     }
     return "";
+  }
+
+  getTxJSON() : string {
+    return JSON.stringify(this)
   }
 }
