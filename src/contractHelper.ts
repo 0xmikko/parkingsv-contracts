@@ -32,7 +32,7 @@ export class ContractCallHelper {
   async sendTX(): Promise<string> {
     try {
       const lockingTxid = await sendTx(this.unlockScriptTx);
-      console.log("transfer txid2[NEW CELL]:    ", lockingTxid);
+      console.log("tx id:    ", lockingTxid);
       return lockingTxid;
     } catch (err) {
       showError(err);

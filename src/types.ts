@@ -354,6 +354,8 @@ declare module 'bsv' {
 
         set(obj: object): this;
 
+        static fromASM(str: string): Script
+
         toBuffer(): Buffer;
         toASM(): string;
         toString(): string;

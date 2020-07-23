@@ -15,8 +15,7 @@ export interface TokenContract extends AbstractContract {
       newUserPubKey: PubKey,
     ): FunctionCall;
 
-    transfer(
-      
+    transfer(    
       // Contract info
       sender: PubKey,
       sig: Signature,
