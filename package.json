@@ -1,34 +1,40 @@
 {
-  "name": "scrypt_boilerplate",
-  "version": "0.2.0",
-  "description": "sCrypt project boilerplate",
+  "name": "parkingsv-contract",
+  "version": "0.0.2",
+  "description": "ParkingSV library",
   "main": "",
+  "types": "",
   "engines": {
     "node": ">=12.0.0"
   },
   "scripts": {
+    "dev": "./node_modules/.bin/ts-node ./src/token.ts",
     "test": "mocha -r ts-node/register tests/**/*scrypttest.*  --reporter spec --timeout 120000",
     "single-test": "mocha -r ts-node/register --reporter spec --timeout 120000",
     "testnet": "node tests/testnet/demo.js",
-    "watch": "node watcher.js"
+    "watch": "node watcher.js",
+    "pub": "tsc && yarn publish"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/scrypt-sv/boilerplate.git"
+    "url": "git+https://github.com/MikaelLazarev/parkingsv-contracts.git"
   },
   "keywords": [
+    "parking",
+    "parkingSV",
     "sCrypt",
     "testing",
     "Smart Contract",
     "bitcoin",
     "bitcoin-sv"
   ],
-  "author": "sCrypt Inc",
+  "author": "MikhailLazarev",
   "license": "MIT",
   "dependencies": {
     "@types/bn.js": "^4.11.6",
     "axios": "^0.19.2",
     "glob": "^7.1.6",
+    "parkingsv-contract": "^0.0.2",
     "scryptc": "0.1.20",
     "scryptlib": "^0.1.5",
     "watch": "^1.0.2"
