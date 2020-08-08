@@ -1,7 +1,7 @@
-import { Bytes, PubKey } from "scryptlib";
 import { sendTx, showError } from "./helper";
 
 import { Script, Transaction, Signature } from "bsv";
+import { PubKey, Bytes } from "./scryptlib/scryptTypes";
 
 export class ContractCallHelper {
   sender: PubKey;
@@ -31,6 +31,7 @@ export class ContractCallHelper {
 
   async sendTX(): Promise<string> {
     try {
+      console.log(this.unlockScriptTx);
       const lockingTxid = await sendTx(this.unlockScriptTx);
       console.log("tx id:    ", lockingTxid);
       return lockingTxid;

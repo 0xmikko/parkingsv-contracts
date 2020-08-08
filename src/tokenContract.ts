@@ -1,7 +1,7 @@
-import { AbstractContract } from "scryptlib/dist/contract";
-import { PubKey, Bytes } from "scryptlib/dist";
+import { AbstractContract } from "./scryptlib/contract";
+import { PubKey, Bytes } from "./scryptlib/scryptTypes";
 import { Signature } from "bsv";
-import { FunctionCall } from "scryptlib/dist/abi";
+import { FunctionCall } from "./scryptlib/abi";
 
 // --------- TOKEN CONTRACT INTERFACE ---------------------
 export interface TokenContract extends AbstractContract {

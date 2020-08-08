@@ -1,6 +1,6 @@
-import { bsv, toHex } from "scryptlib/dist";
 import { AxiosResponse } from "axios";
 import axios from "axios";
+import { bsv, toHex } from "./scryptlib/utils";
 
 export class TxUtil {
 

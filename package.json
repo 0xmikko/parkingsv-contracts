@@ -1,14 +1,14 @@
 {
   "name": "parkingsv-contract",
-  "version": "0.0.2",
+  "version": "0.0.24",
   "description": "ParkingSV library",
-  "main": "",
-  "types": "",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "engines": {
     "node": ">=12.0.0"
   },
   "scripts": {
-    "dev": "./node_modules/.bin/ts-node ./src/token.ts",
+    "dev": "./node_modules/.bin/ts-node ./src/test.ts",
     "test": "mocha -r ts-node/register tests/**/*scrypttest.*  --reporter spec --timeout 120000",
     "single-test": "mocha -r ts-node/register --reporter spec --timeout 120000",
     "testnet": "node tests/testnet/demo.js",
@@ -33,20 +33,28 @@
   "dependencies": {
     "@types/bn.js": "^4.11.6",
     "axios": "^0.19.2",
+    "bsv": "git+https://git@github.com/scrypt-sv/bsv.git#07f0d3c688a979d0b5d5cfe5e96c53f52fce6d58",
     "glob": "^7.1.6",
-    "parkingsv-contract": "^0.0.2",
+    "md5": "^2.2.1",
     "scryptc": "0.1.20",
-    "scryptlib": "^0.1.5",
+    "ts-optchain": "^0.1.8",
     "watch": "^1.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.8",
     "@types/mocha": "^7.0.1",
     "@types/node": "^14.0.27",
+    "@types/rimraf": "^2.0.3",
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
     "chai": "^4.2.0",
+    "eslint": "^7.2.0",
     "mocha": "^7.0.1",
+    "ts-loader": "^6.2.1",
     "ts-node": "^8.10.2",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^3.7.5"
+    "typescript": "^3.9.5",
+    "webpack": "4.29.5",
+    "webpack-cli": "^3.3.11"
   }
 }

@@ -1,36 +1,16 @@
+import { PrivateKey, PublicKey, Script, Signature, Transaction } from "bsv";
 import {
-  bsv,
   buildContractClass,
-  getPreimage,
-  toHex,
-  num2bin,
-  Bytes,
-  signTx,
-  PubKey,
-  PrivKey,
-  Sig,
-  Sha256,
-} from "scryptlib";
-import {
-  DataLen,
-  loadDesc,
-  createUnlockingTx,
-  createLockingTx,
-  sendTx,
-  showError,
-  compileContract,
-} from "./helper";
-
-import axios, { AxiosResponse } from "axios";
-import { Script, Transaction, PrivateKey, PublicKey, Signature } from "bsv";
-import { privateKey } from "./privateKey";
+  ContractDescription,
+} from "./scryptlib/contract";
+import { Bytes, PubKey, Sig } from "./scryptlib/scryptTypes";
+import { bsv, getPreimage, signTx, toHex } from "./scryptlib/utils";
 
 import { ContractCallHelper } from "./contractHelper";
-import { TokenContract } from "./tokenContract";
+import { createLockingTx, createUnlockingTx, sendTx } from "./helper";
 import { Ledger } from "./ledger";
-import { exit } from "process";
+import { TokenContract } from "./tokenContract";
 import { TxUtil } from "./txUtil";
-import { KeyUtil } from "./keyUtil";
 
 export class ParkingToken {
   tokenContract: TokenContract;
@@ -44,17 +24,19 @@ export class ParkingToken {
   lockingTx: Transaction;
   lockingTxid: string;
 
-  private constructor(privateKey: PrivateKey) {
-    const Token = buildContractClass(loadDesc("token_desc.json"));
+  private constructor(privateKey: PrivateKey, desc: ContractDescription) {
+    const Token = buildContractClass(desc);
     this.tokenContract = new Token();
     this.ledger = new Ledger();
     this.ownerPrivateKey = privateKey;
     this.ownerPublicKey = bsv.PublicKey.fromPrivateKey(this.ownerPrivateKey);
   }
 
-  static async deployContract(privateKey: PrivateKey): Promise<ParkingToken> {
-    compileContract("token.scrypt");
-    const instance = new ParkingToken(privateKey);
+  static async deployContract(
+    privateKey: PrivateKey,
+    desc: ContractDescription
+  ): Promise<ParkingToken> {
+    const instance = new ParkingToken(privateKey, desc);
     await instance.initContract();
     return instance;
   }
@@ -119,14 +101,12 @@ export class ParkingToken {
     return this.lockingTxid;
   }
 
-  // Restore contract from address
   static async fromTransaction(
     privateKey: PrivateKey,
-    lastKnownTransaction: string
+    lastKnownTransaction: string,
+    desc: ContractDescription
   ): Promise<ParkingToken> {
-    compileContract("token.scrypt");
-    console.log("Compilation finished")
-    const instance = new ParkingToken(privateKey);
+    const instance = new ParkingToken(privateKey, desc);
     const lastTransaction = await TxUtil.getLastTransaction(
       lastKnownTransaction
     );

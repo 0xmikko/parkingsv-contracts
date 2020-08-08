@@ -1,4 +1,4 @@
-import { num2bin } from "scryptlib/dist";
+import { num2bin } from "./scryptlib/utils";
 import { DataLen } from "./helper";
 
 interface Balance {
@@ -36,7 +36,8 @@ export class Ledger {
       );
       const addr = part.substr(0, PubKeyLen);
       const value = parseInt(part.substr(PubKeyLen, DataLen), 16);
-      console.log(addr, value);
+      ledger.addHolder(addr);
+      ledger.setBalance(addr, value);
     }
     return ledger;
   }

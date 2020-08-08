@@ -1,6 +1,6 @@
-import { bsv, toHex } from "scryptlib";
 import { PublicKey, HDPrivateKey, PrivateKey } from "bsv";
 import * as Mnemonic from "bsv/mnemonic";
+import { bsv, toHex } from "./scryptlib/utils";
 
 export class KeyUtil {
   static generateMnemonic(): string {
@@ -10,8 +10,8 @@ export class KeyUtil {
 
   static getPrivateKeyFromMnemonic(mnemonicStr: string): string {
     const mnemonic = Mnemonic.fromString(mnemonicStr);
-    const hdPrivateKey = bsv.HDPrivateKey as HDPrivateKey;
-    const privateKey = hdPrivateKey.fromSeed(mnemonic.toSeed(), bsv.Networks.TESTNET).privateKey;
+    const hdPrivateKey = bsv.HDPrivateKey;
+    const privateKey = hdPrivateKey.fromSeed(mnemonic.toSeed(), bsv.Networks.testnet).privateKey;
     return privateKey.toWIF();
   }
 

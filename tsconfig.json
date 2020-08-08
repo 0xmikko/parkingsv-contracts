@@ -1,18 +1,21 @@
 {
 	"compilerOptions": {
-		"target": "es6",
-		"module": "commonjs",
-		"moduleResolution": "node",
-		"sourceMap": true,
-		"alwaysStrict": true,
-		"strictNullChecks": true,
-		"outDir": "out",
-		"rootDir": "tests",
-		"lib": [
-      "es2020"
-    ]
+	  "target": "es5",
+	  "module": "commonjs",
+	  "moduleResolution": "node",
+	  "sourceMap": true,
+	  "allowJs": true,
+	  "alwaysStrict": true,
+	  "downlevelIteration": true,
+	//   "strictNullChecks": true,
+	  "outDir": "./lib/" /* Redirect output structure to the directory. */,
+	  "rootDir": "./src/" /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */,
+	  "typeRoots": ["index.d.ts", "node_modules/@types"],
+	  // "checkJs": true,                       /* Report errors in .js files. */
+	  "declaration": true /* Generates corresponding '.d.ts' file. */,
+	  "lib": ["es2020"]
 	},
-	"include": ["tests/**/*.ts"],
-	"exclude": ["node_modules"]
-}
-
+	"include": ["src/**/*", "contracts/*"],
+	"exclude": ["node_modules", "build"]
+  }
+  

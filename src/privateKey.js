@@ -1,5 +1,5 @@
 const { exit } = require('process')
-const { bsv } = require('scryptlib');
+const { bsv } = require('./scryptlib/utils');
 
 // fill in private key on testnet in WIF here
 const key = 'cTmL8VmSeqduXjC5YRXX15voph4r5PuP6jUj6Z2rv2FpWwqdhh32'
