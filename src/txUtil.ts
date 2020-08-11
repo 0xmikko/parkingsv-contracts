@@ -1,10 +1,10 @@
 import { AxiosResponse } from "axios";
 import axios from "axios";
 import { bsv, toHex } from "./scryptlib/utils";
+import { showError } from "./helper";
 
 export class TxUtil {
-
-  static cache : Map<string, string> = new Map<string, string>();
+  static cache: Map<string, string> = new Map<string, string>();
 
   static async getTxData(txHash: string): Promise<string> {
     if (TxUtil.cache.has(txHash)) {
@@ -18,33 +18,47 @@ export class TxUtil {
     return result;
   }
 
+  static async getTxUnspentAmount(txHash: string): Promise<number> {
+    const resp2 = await axios.get(
+      `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${txHash}`
+    );
+
+    console.log(resp2.data.vout[0]);
+    return Math.floor(resp2.data.vout[0].value * 100000000);
+  }
+
   static async getLastTransaction(fundingTransaction: string): Promise<string> {
+    try {
+      const txData = await TxUtil.getTxData(fundingTransaction);
+      const s = bsv.crypto.Hash.sha256(Buffer.from(txData, "hex")).reverse();
+      const scriptHash = toHex(s);
 
-  
-    const txData = await TxUtil.getTxData(fundingTransaction);
-    const s = bsv.crypto.Hash.sha256(Buffer.from(txData, "hex")).reverse();
-    const scriptHash = toHex(s);
+      let resp: AxiosResponse;
+      do {
+        resp = await axios.get(
+          `https://api.whatsonchain.com/v1/bsv/test/script/${scriptHash}/history`
+        );
+        if (resp.data.length === 0) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      } while (resp.data.length === 0);
 
-    let resp: AxiosResponse;
-    do {
-      resp = await axios.get(
-        `https://api.whatsonchain.com/v1/bsv/test/script/${scriptHash}/history`
-      );
-      if (resp.data.length === 0) {
-        await new Promise((r) => setTimeout(r, 100));
+      console.log(resp.data);
+      if (resp.data.length === 1 && resp.data[0].tx_hash === fundingTransaction)
+        return fundingTransaction;
+
+      for (let trans of resp.data) {
+        const resp2 = await axios.get(
+          `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${trans.tx_hash}`
+        );
+
+        console.log(resp2.data);
+        if (resp2.data.vin[0].txid === fundingTransaction) {
+          return await TxUtil.getLastTransaction(trans.tx_hash);
+        }
       }
-    } while (resp.data.length === 0);
-
-    if (resp.data.length === 1 && resp.data[0].tx_hash === fundingTransaction)
-      return fundingTransaction;
-
-    for (let trans of resp.data) {
-      const resp2 = await axios.get(
-        `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${trans.tx_hash}`
-      );
-      if (resp2.data.vin[0].txid === fundingTransaction) {
-        return await TxUtil.getLastTransaction(trans.tx_hash);
-      }
+    } catch (err) {
+      showError(err);
     }
 
     return "";

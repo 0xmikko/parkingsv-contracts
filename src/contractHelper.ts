@@ -31,7 +31,6 @@ export class ContractCallHelper {
 
   async sendTX(): Promise<string> {
     try {
-      console.log(this.unlockScriptTx);
       const lockingTxid = await sendTx(this.unlockScriptTx);
       console.log("tx id:    ", lockingTxid);
       return lockingTxid;
@@ -42,6 +41,6 @@ export class ContractCallHelper {
   }
 
   getTxJSON() : string {
-    return JSON.stringify(this)
+    return this.unlockScriptTx.serialize();
   }
 }

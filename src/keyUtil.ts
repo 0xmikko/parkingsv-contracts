@@ -20,6 +20,11 @@ export class KeyUtil {
     return toHex(KeyUtil.getPublicKey(privateKey));
   }
 
+  static getWIF(wif: string): string {
+    const privateKey = KeyUtil.getPrivateKeyFromWIF(wif);
+    return privateKey.toAddress().toString();
+  }
+
   static getPrivateKeyFromWIF(key: string): PrivateKey {
     return bsv.PrivateKey.fromWIF(key);
   }

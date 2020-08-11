@@ -1,6 +1,6 @@
 {
   "name": "parkingsv-contract",
-  "version": "0.0.24",
+  "version": "0.0.26",
   "description": "ParkingSV library",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -14,10 +14,6 @@
     "testnet": "node tests/testnet/demo.js",
     "watch": "node watcher.js",
     "pub": "tsc && yarn publish"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MikaelLazarev/parkingsv-contracts.git"
   },
   "keywords": [
     "parking",

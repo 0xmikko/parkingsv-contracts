@@ -7,7 +7,7 @@ import { Bytes, PubKey, Sig } from "./scryptlib/scryptTypes";
 import { bsv, getPreimage, signTx, toHex } from "./scryptlib/utils";
 
 import { ContractCallHelper } from "./contractHelper";
-import { createLockingTx, createUnlockingTx, sendTx } from "./helper";
+import { createLockingTx, createUnlockingTx, sendTx, sendTxHex } from "./helper";
 import { Ledger } from "./ledger";
 import { TokenContract } from "./tokenContract";
 import { TxUtil } from "./txUtil";
@@ -19,7 +19,7 @@ export class ParkingToken {
   ownerPrivateKey: PrivateKey;
   ownerPublicKey: PublicKey;
 
-  amount: number = 8500;
+  amount: number = 30000;
   fee: number = 2000;
   lockingTx: Transaction;
   lockingTxid: string;
@@ -110,8 +110,14 @@ export class ParkingToken {
     const lastTransaction = await TxUtil.getLastTransaction(
       lastKnownTransaction
     );
+
+    console.log("LASTTR", lastTransaction)
     const txData = await TxUtil.getTxData(lastTransaction);
     instance.initFromTxData(txData);
+
+    instance.lockingTxid = lastTransaction;
+    instance.amount = await TxUtil.getTxUnspentAmount(lastTransaction);
+    console.log(instance.amount)
     return instance;
   }
 
@@ -139,6 +145,45 @@ export class ParkingToken {
 
     this.lockingTxid = await cch.sendTX();
     this.amount = cch.newAmount;
+  }
+
+  async transferTokensJSON(toAddress: string, amount: number): Promise<string> {
+    const transferData = this.ledger.transfer(
+      toHex(this.ownerPublicKey),
+      toAddress,
+      amount
+    );
+    console.log(this.ledger.toString());
+    console.log(transferData);
+
+    const cch = await this.prepareCall();
+    cch.unlockingScript = this.tokenContract
+      .transfer(
+        cch.sender,
+        cch.signature,
+        cch.preimage,
+        cch.newAmount,
+        transferData.fromIndex,
+        transferData.toIndex,
+        transferData.amount
+      )
+      .toScript() as Script;
+
+    return cch.getTxJSON();
+  }
+
+  async payByJSON(txHex: string) {
+    const buffer = Buffer.from(txHex);
+    const tx = new Transaction(buffer);
+    console.log(tx);
+    const lockingTxid = await sendTxHex(txHex);
+    const txData = await TxUtil.getTxData(lockingTxid);
+    this.initFromTxData(txData);
+
+    this.lockingTxid = lockingTxid ;
+    this.amount = await TxUtil.getTxUnspentAmount(lockingTxid );
+    console.log(this.amount)
+
   }
 
   private async prepareCall(): Promise<ContractCallHelper> {

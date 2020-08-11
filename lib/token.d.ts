@@ -18,5 +18,7 @@ export declare class ParkingToken {
     addNewUser(publicKey: string): Promise<string>;
     static fromTransaction(privateKey: PrivateKey, lastKnownTransaction: string, desc: ContractDescription): Promise<ParkingToken>;
     transferTokens(toAddress: string, amount: number): Promise<void>;
+    transferTokensJSON(toAddress: string, amount: number): Promise<string>;
+    payByJSON(txHex: string): Promise<void>;
     private prepareCall;
 }

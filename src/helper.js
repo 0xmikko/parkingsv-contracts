@@ -1,4 +1,4 @@
-const { bsv } = require('./scryptlib/utils');
+const { bsv } = require("./scryptlib/utils");
 
 const Signature = bsv.crypto.Signature;
 const BN = bsv.crypto.BN;
@@ -122,6 +122,17 @@ async function sendTx(tx) {
   return txid;
 }
 
+async function sendTxHex(txhex) {
+  try {
+    const { data: txid } = await axios.post(`${API_PREFIX}/tx/raw`, {
+      txhex,
+    });
+  } catch (err) {
+    showError(err);
+  }
+  return txid;
+}
+
 function showError(error) {
   // Error
   if (error.response) {
@@ -160,5 +171,6 @@ module.exports = {
   dummyTxId,
   unlockP2PKHInput,
   sendTx,
+  sendTxHex,
   showError,
 };
