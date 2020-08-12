@@ -5,7 +5,7 @@ contract Data {
     static int OP_PUSHDATA2 = 77;
     static int OP_PUSHDATA4 = 78;
 
-
+    // Generates opcode and len data for decoding OP_RETURN data
     static function convertLen(int num) returns(bytes) {
 
         bytes result = b'';
@@ -37,6 +37,5 @@ contract Data {
         }
 
         return shift;
-
     }
 }

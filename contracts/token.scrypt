@@ -2,10 +2,11 @@ import "util.scrypt";
 import "data.scrypt";
 
 /**
-* A toy token example between two holders
+* Parking Token contract
 */
 contract Token {
 
+    // Adds new user to contract
     public function addNewMember(
         PubKey sender,
         Sig senderSig,
@@ -16,38 +17,49 @@ contract Token {
         // this ensures the preimage is for the current tx
         require(Tx.checkPreimage(txPreimage));
 
-
+        // Loads locking script for extracting data
         bytes lockingScript = Util.scriptCode(txPreimage);
-
         int scriptLen = length(lockingScript);
+
+        // Getting quantity of balance pairs
         int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
 
+        // calculates dataBlock leght
         int dataBlockLen = Util.DataLen + qty *(Util.PubKeyLen + Util.DataLen);
-        int updatedDataLen = Util.DataLen + (qty + 1) *(Util.PubKeyLen + Util.DataLen);
 
+        // calculates new legth (with new entry)
+        int updatedDataLen = Util.DataLen +(qty + 1) *(Util.PubKeyLen + Util.DataLen);
+
+        // calculates last script byte position
         int codeEnd = scriptLen - dataBlockLen - Data.getShift(dataBlockLen);
 
-
+        // calculates correct opCode for encoding leghts of data part
         bytes opCode = Data.convertLen(updatedDataLen);
+
+        // generates codepart + opCode for encoding data length
         bytes preUpdatedScript = lockingScript[ : codeEnd] + opCode;
 
+        // adding data part
         bytes updatedLockingScript = preUpdatedScript + lockingScript[scriptLen - dataBlockLen : scriptLen - Util.DataLen]
         + newUserPk + num2bin(0, Util.DataLen)
         + num2bin(qty + 1, Util.DataLen);
 
+        // alternatively calculates hash
         Sha256 hashOutputs = hash256(num2bin(amount,
                 Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
 
+        // compare result with expected preImage
         require(hashOutputs == Util.hashOutputs(txPreimage));
     }
 
+    // Transfer tokens between balance holders
     public function transfer(
         // Transaction parameters
         PubKey sender,
         Sig senderSig,
         bytes txPreimage,
         int amount,
-        
+
         // Function parameters
         int senderIndex,
         int receiverIndex,
@@ -64,45 +76,55 @@ contract Token {
         bytes lockingScript = Util.scriptCode(txPreimage);
         int scriptLen = length(lockingScript);
 
-
+        // Getting quantity of balance pairs
         int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
+
+        // Calculating start of dataPart
         int pkStart = scriptLen - qty *(Util.PubKeyLen + Util.DataLen) - Util.DataLen;
 
         // check that index < accoutns qty
         require(senderIndex < qty);
         require(receiverIndex < qty);
 
+        // Getting sender pubkey & balance
         PubKey pkSender = this.getPubKeyByIndex(pkStart, lockingScript, senderIndex);
         int balanceSender = this.getBalanceByIndex(pkStart, lockingScript, senderIndex);
 
+        // Getting receiver pubkey & balance
         PubKey pkReceiver = this.getPubKeyByIndex(pkStart, lockingScript, receiverIndex);
         int balanceReceiver = this.getBalanceByIndex(pkStart, lockingScript, receiverIndex);
 
-        // only between two holders
+        // check that sender is sender :)
         require(sender == pkSender);
 
-        // transfer
+        // check that sender has enough money
         require(balanceSender >= value);
+
+        // transfer money between balances
         balanceSender = balanceSender - value;
         balanceReceiver = balanceReceiver + value;
 
-        // write new locking script
+        // updating sender balance
         bytes updatedLockingScript = this.updateState(pkStart,
             lockingScript,
             senderIndex,
             balanceSender);
 
+        // updating receiver balancec
         updatedLockingScript = this.updateState(pkStart,
             updatedLockingScript,
             receiverIndex,
             balanceReceiver);
 
+        // getting hash of script result
         Sha256 hashOutputs = hash256(num2bin(amount,
                 Util.OutputValueLen) + Util.writeVarint(updatedLockingScript));
 
+        // compare it with hash of preimage
         require(hashOutputs == Util.hashOutputs(txPreimage));
     }
 
+    // Returns pubkey by index
     function getPubKeyByIndex(int pkStart, bytes lockingScript, int index) returns(PubKey) {
 
         int offset = pkStart + index *(Util.PubKeyLen + Util.DataLen);
@@ -110,7 +132,7 @@ contract Token {
         return pkSender;
     }
 
-
+    // Returns balance by index
     function getBalanceByIndex(int pkStart, bytes lockingScript, int index) returns(int) {
 
         int offset = pkStart + index *(Util.PubKeyLen + Util.DataLen) + Util.PubKeyLen;
@@ -118,6 +140,7 @@ contract Token {
         return balance;
     }
 
+    // Updades balance by index
     function updateState(int pkStart,
         bytes lockingScript,
         int index,
@@ -128,9 +151,6 @@ contract Token {
 
         return updatedState;
     }
-
-
-
 
 }
 
