@@ -1,5 +1,4 @@
 const { bsv, compile } = require("./scryptlib");
-const { exit } = require("process");
 const path = require("path");
 const { readFileSync, existsSync } = require("fs");
 

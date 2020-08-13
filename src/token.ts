@@ -32,6 +32,7 @@ export class ParkingToken {
     this.ownerPublicKey = bsv.PublicKey.fromPrivateKey(this.ownerPrivateKey);
   }
 
+  // Deploy new contract and returns ParkingToken class
   static async deployContract(
     privateKey: PrivateKey,
     desc: ContractDescription
@@ -77,6 +78,7 @@ export class ParkingToken {
     this.ledger = Ledger.fromTxData(txData);
   }
 
+  // Adds balance holder for token balance array on contract
   async addNewUser(publicKey: string): Promise<string> {
     // Getting last contract instance
     console.log(`[TOKEN CONTRACT]: Adding ${publicKey}`);
@@ -101,6 +103,8 @@ export class ParkingToken {
     return this.lockingTxid;
   }
 
+  // Create Parking Token Class based on info found with last known transactions
+  // It found the last transaction and set ledger with last known state
   static async fromTransaction(
     privateKey: PrivateKey,
     lastKnownTransaction: string,
@@ -111,7 +115,6 @@ export class ParkingToken {
       lastKnownTransaction
     );
 
-    console.log("LASTTR", lastTransaction)
     const txData = await TxUtil.getTxData(lastTransaction);
     instance.initFromTxData(txData);
 
@@ -121,6 +124,7 @@ export class ParkingToken {
     return instance;
   }
 
+  // Transfer tokens from contract owner (a person who runs this code) to pubkey
   async transferTokens(toAddress: string, amount: number): Promise<void> {
     const transferData = this.ledger.transfer(
       toHex(this.ownerPublicKey),
@@ -147,6 +151,7 @@ export class ParkingToken {
     this.amount = cch.newAmount;
   }
 
+  // Serialize TX for Hex format to be able to transfer from mobile app to node
   async transferTokensJSON(toAddress: string, amount: number): Promise<string> {
     const transferData = this.ledger.transfer(
       toHex(this.ownerPublicKey),
@@ -172,6 +177,8 @@ export class ParkingToken {
     return cch.getTxJSON();
   }
 
+
+  // Make a payment by serialised TX
   async payByJSON(txHex: string) {
     const buffer = Buffer.from(txHex);
     const tx = new Transaction(buffer);
@@ -186,6 +193,7 @@ export class ParkingToken {
 
   }
 
+  // Prepare ContractCallHelpser for contract call based on Parking Token data
   private async prepareCall(): Promise<ContractCallHelper> {
     const prevLockingScript = this.tokenContract.lockingScript;
     this.tokenContract.dataLoad = this.ledger.getDataLoad();

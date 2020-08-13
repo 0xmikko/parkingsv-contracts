@@ -4,29 +4,35 @@ import { bsv, toHex } from "./scryptlib/utils";
 import { showError } from "./helper";
 
 export class TxUtil {
+
+  static SATOSHI_IN_BITCOIN = 100000000;
+  static NETWORK = "test";
+  static API = `https://api.whatsonchain.com/v1/bsv/${TxUtil.NETWORK}`;
+
   static cache: Map<string, string> = new Map<string, string>();
 
+  // Returns localscript data in Hex format
   static async getTxData(txHash: string): Promise<string> {
     if (TxUtil.cache.has(txHash)) {
       return TxUtil.cache.get(txHash) || "";
     }
     const resp2 = await axios.get(
-      `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${txHash}`
+      `${TxUtil.API}/tx/hash/${txHash}`
     );
     const result = resp2.data.vout[0].scriptPubKey.hex;
     TxUtil.cache.set(txHash, result);
     return result;
   }
 
+  // Returns unspent amount
   static async getTxUnspentAmount(txHash: string): Promise<number> {
-    const resp2 = await axios.get(
-      `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${txHash}`
+    const resp = await axios.get(
+      `${TxUtil.API}/test/tx/hash/${txHash}`
     );
-
-    console.log(resp2.data.vout[0]);
-    return Math.floor(resp2.data.vout[0].value * 100000000);
+    return Math.floor(resp.data.vout[0].value * TxUtil.SATOSHI_IN_BITCOIN);
   }
 
+  // Finds last transaction
   static async getLastTransaction(fundingTransaction: string): Promise<string> {
     try {
       const txData = await TxUtil.getTxData(fundingTransaction);
@@ -36,7 +42,7 @@ export class TxUtil {
       let resp: AxiosResponse;
       do {
         resp = await axios.get(
-          `https://api.whatsonchain.com/v1/bsv/test/script/${scriptHash}/history`
+          `${TxUtil.API}/script/${scriptHash}/history`
         );
         if (resp.data.length === 0) {
           await new Promise((r) => setTimeout(r, 100));
@@ -48,12 +54,12 @@ export class TxUtil {
         return fundingTransaction;
 
       for (let trans of resp.data) {
-        const resp2 = await axios.get(
-          `https://api.whatsonchain.com/v1/bsv/test/tx/hash/${trans.tx_hash}`
+        const resp = await axios.get(
+          `${TxUtil.API}/tx/hash/${trans.tx_hash}`
         );
 
-        console.log(resp2.data);
-        if (resp2.data.vin[0].txid === fundingTransaction) {
+        console.log(resp.data);
+        if (resp.data.vin[0].txid === fundingTransaction) {
           return await TxUtil.getLastTransaction(trans.tx_hash);
         }
       }
@@ -61,6 +67,6 @@ export class TxUtil {
       showError(err);
     }
 
-    return "";
+    throw new Error("Transaction not found")
   }
 }
