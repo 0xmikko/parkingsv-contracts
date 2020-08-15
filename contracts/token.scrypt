@@ -25,10 +25,10 @@ contract Token {
         int qty = unpack(lockingScript[scriptLen - Util.DataLen : ]);
 
         // calculates dataBlock leght
-        int dataBlockLen = Util.DataLen + qty *(Util.PubKeyLen + Util.DataLen);
+        int dataBlockLen = Util.DataLen + qty * (Util.PubKeyLen + Util.DataLen);
 
         // calculates new legth (with new entry)
-        int updatedDataLen = Util.DataLen +(qty + 1) *(Util.PubKeyLen + Util.DataLen);
+        int updatedDataLen = Util.DataLen + (qty + 1) * (Util.PubKeyLen + Util.DataLen);
 
         // calculates last script byte position
         int codeEnd = scriptLen - dataBlockLen - Data.getShift(dataBlockLen);

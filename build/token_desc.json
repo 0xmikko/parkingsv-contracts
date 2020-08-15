@@ -1,7 +1,7 @@
 {
     "compilerVersion": "0.1.0+commit.ab4c22f",
     "contract": "Token",
-    "md5": "86eb8ee6e5d1875f4cda029bac999401",
+    "md5": "9fc165bf0c08e36390abf865ac4de9b9",
     "abi": [
         {
             "type": "function",
